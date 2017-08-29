@@ -113,11 +113,11 @@ export default result
   }
 
   .natf-target {
-    background-image: url('/static/images/NATF-target.png')
+    background-image: url('../assets/images/NATF-target.png')
   }
 
   .watl-target {
-    background-image: url('/static/images/WATL-target.png')
+    background-image: url('../assets/images/WATL-target.png')
   }
 
   .tournament {
