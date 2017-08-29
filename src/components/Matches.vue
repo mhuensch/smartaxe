@@ -54,7 +54,7 @@ function mounted () {
 }
 
 function reloadThrowers () {
-  let options = { match: { tournament: $vm.tournamentId } }
+  let options = { match: { tournament: $vm.tournamentId }, sort: { name: true } }
   $vm.$store.find('thrower', null, options).then(result => {
     $vm.throwers = result.payload.records
   })

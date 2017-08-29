@@ -11,6 +11,7 @@ export default {
 </script>
 
 <style>
+
 #app {
   /*font-family: 'Avenir', Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
@@ -19,6 +20,7 @@ export default {
   color: #2c3e50;
   margin-top: 60px;*/
 }
+
 .container {
     display:flex;
     flex-wrap:wrap;
@@ -35,6 +37,10 @@ export default {
 
 button.btn-expanded {
   width: 100%
+}
+
+a {
+  text-decoration: underline;
 }
 
 </style>

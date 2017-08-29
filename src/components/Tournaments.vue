@@ -3,23 +3,30 @@
     <h1>Smart Axe!</h1>
     <p class="sub-header">The sharpest tool in the shed.</p>
 
-    <template v-if="currentTournament">
-      <h2>Current Tournament</h2>
+    <template v-if="tournaments.length > 0">
+      <h2>Recent Tournaments</h2>
+      <div class="container">
+        <template v-for="tournament in tournaments">
 
-      <div class="organization watl-target">
-        <button class="btn tournament" @click="continueTournament()">Continue Tournament</button>
+            <div @click="continueTournament(tournament)" v-bind:class="[tournament.target === 'WATL' ? 'watl-target' : 'natf-target', 'organization']" >
+              <button class="btn tournament">Continue Tournament</button>
+            </div>
+
+        </template>
       </div>
     </template>
 
 
     <h2>Start a New Tournament</h2>
 
-    <div class="organization watl-target">
-      <button class="btn tournament" @click="newTournament('WATL')">New WATL Tournament</button>
-    </div>
+    <div class="container">
+      <div @click="newTournament('WATL')" class="organization watl-target">
+        <button class="btn tournament">New WATL Tournament</button>
+      </div>
 
-    <div class="organization natf-target">
-      <button class="btn tournament" @click="newTournament('NATF')">New NATF Tournament</button>
+      <div @click="newTournament('NATF')" class="organization natf-target">
+        <button class="btn tournament">New NATF Tournament</button>
+      </div>
     </div>
 
   </div>
@@ -31,42 +38,30 @@ let $vm = null
 
 function created () {
   $vm = this
-  reloadTournaments()
+  loadTournaments()
 }
 
 function newTournament (target) {
-  if ($vm.currentTournament) {
-    return $vm.$store
-      .delete('tournament', $vm.currentTournament.id)
-      .then(() => {
-        $vm.currentTournament = null
-        newTournament(target)
-      })
-  }
-
   $vm.$store
-    .create('tournament', { target: target })
+    .create('tournament', { target: target, started: new Date() })
     .then(tournament => {
-      $vm.currentTournament = tournament.payload.records[0]
-      continueTournament()
+      continueTournament(tournament.payload.records[0])
     })
 }
 
-function continueTournament () {
-  console.log('CURRENT', $vm.currentTournament)
-  $vm.$router.push({ name: 'teams', params: { tournamentId: $vm.currentTournament.id } })
+function continueTournament (tournament) {
+  $vm.$router.push({ name: 'throwers-new', params: { tournamentId: tournament.id } })
 }
 
-function reloadTournaments () {
-  $vm.$store.find('tournament').then(result => {
-    let records = result.payload.records
-    $vm.currentTournament = records.length ? records[0] : null
+function loadTournaments () {
+  $vm.$store.find('tournament', null, { sort: { started: true }, limit: 5 }).then(result => {
+    $vm.tournaments = result.payload.records
   })
 }
 
 function data () {
   let model =
-    { currentTournament: null
+    { tournaments: []
     }
 
   return model
@@ -94,6 +89,12 @@ export default result
     display: block;
   }
 
+  .container {
+    display: flex;
+    justify-content: center;
+    cursor: pointer;
+  }
+
   .sub-header {
     margin-bottom: 3em;
   }
@@ -108,6 +109,7 @@ export default result
     margin-bottom: 30px;
     border: 1px solid #ededed;
     border-radius: 10px;
+    margin: 10px;
   }
 
   .natf-target {

@@ -5,6 +5,7 @@ const watl =
   , { name: 'Four Ring', value: 4 }
   , { name: 'Bulseye', value: 6 }
   , { name: 'Killshot', value: 10 }
+  , { name: 'No Hit', value: 0 }
   ]
 
 export default watl

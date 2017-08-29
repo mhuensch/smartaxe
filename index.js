@@ -10,8 +10,9 @@ Vue.config.productionTip = false
 import VeeValidate from 'vee-validate'
 Vue.use(VeeValidate)
 
-import 'vue-awesome/icons/square-o'
-import 'vue-awesome/icons/check-square-o'
+import 'vue-awesome/icons/times'
+import 'vue-awesome/icons/arrow-circle-right'
+import 'vue-awesome/icons/arrow-circle-left'
 import Icon from 'vue-awesome/components/Icon'
 Vue.component('icon', Icon)
 
