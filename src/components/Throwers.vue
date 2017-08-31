@@ -4,15 +4,8 @@
     <div style="margin-bottom: 30px; margin-top:30px;">
       <div class="form-horizontal">
         <div class="form-group">
-          <div :class="[teams.length === 0 ? 'col-10' : 'col-8']">
+          <div class="col-10">
             <input class="form-input input-lg" type="text" placeholder="Name" @keyup.enter="addThrower()" v-model="newThrower"/>
-          </div>
-          <div class="col-2" v-if="teams.length !== 0">
-            <select class="form-select select-lg" v-model="newTeam" v-if="teams.length > 0">
-              <template v-for="team in teams">
-                <option :value="team.id">{{team.name}}</option>
-              </template>
-            </select>
           </div>
           <div class="col-2">
             <button class="btn btn-lg btn-expanded" @click="addThrower()">Add Thrower</button>
@@ -27,20 +20,11 @@
       <template v-for="thrower in throwers">
         <div class="form-horizontal">
           <div class="form-group">
-            <div :class="[teams.length === 0 ? 'col-10' : 'col-8']">
+            <div class="col-10">
               <input class="form-input input-lg" type="text" placeholder="Name" v-model="thrower.name"/>
             </div>
-            <div class="col-2" v-if="teams.length !== 0">
-              <select class="form-select select-lg" v-model="thrower.team" v-if="teams.length > 0">
-                <template v-for="team in teams">
-                  <option :value="team.id">{{team.name}}</option>
-                </template>
-              </select>
-            </div>
-            <div class="col-2">
-              <button @click="removeThrower(thrower.id)" tabindex="-1">
-                <icon name="times" label="remove" scale=2 class="red"></icon>
-              </button>
+            <div class="col-2" @click="removeThrower(thrower.id)">
+              <icon name="times" label="remove" scale=2 class="red"></icon>
             </div>
           </div>
         </div>
@@ -50,7 +34,7 @@
 
 
     <button class="btn btn-link" :disabled="throwers.length === 0" @click="next()">
-      Next: Start a Match ->
+      Start a New Match
     </button>
 
   </div>
@@ -64,12 +48,11 @@
     $vm = this
     $vm.tournamentId = $vm.$route.params.tournamentId
     reloadThrowers()
-    reloadTeams()
   }
 
   function mounted () {
     this.$watch('$data.throwers', (throwers) => {
-      let replacements = throwers.map(thrower => { return { id: thrower.id, replace: { name: thrower.name, team: thrower.team } } })
+      let replacements = throwers.map(thrower => { return { id: thrower.id, replace: { name: thrower.name } } })
       if (replacements.length === 0) return
       $vm.$store.update('thrower', replacements)
     }, { deep: true })
@@ -77,10 +60,9 @@
 
   function addThrower () {
     $vm.$store
-      .create('thrower', { name: $vm.newThrower, team: $vm.newTeam, tournament: $vm.tournamentId })
+      .create('thrower', { name: $vm.newThrower, tournament: $vm.tournamentId })
       .then(() => {
         $vm.newThrower = null
-        $vm.newTeam = null
         reloadThrowers()
       })
   }
@@ -92,17 +74,10 @@
   }
 
   function reloadThrowers () {
-    let options = { match: { tournament: $vm.tournamentId } }
+    let options = { match: { tournament: $vm.tournamentId }, sort: { name: true } }
     $vm.$store.find('thrower', null, options).then(result => {
       $vm.throwers = result.payload.records
       $vm.newThrower = null
-    })
-  }
-
-  function reloadTeams () {
-    let options = { match: { tournament: $vm.tournamentId } }
-    $vm.$store.find('team', null, options).then(result => {
-      $vm.teams = result.payload.records
     })
   }
 
@@ -113,9 +88,7 @@
   function data () {
     let model =
       { newThrower: null
-      , newTeam: null
       , throwers: []
-      , teams: []
       }
 
     return model
@@ -141,6 +114,11 @@
 
 .red {
   color: red;
+}
+
+.fa-icon {
+  margin-top: 3px;
+  margin-left: 5px;
 }
 
 </style>

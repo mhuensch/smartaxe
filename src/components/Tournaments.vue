@@ -50,7 +50,7 @@ function newTournament (target) {
 }
 
 function continueTournament (tournament) {
-  $vm.$router.push({ name: 'throwers-new', params: { tournamentId: tournament.id } })
+  $vm.$router.push({ name: 'throwers', params: { tournamentId: tournament.id } })
 }
 
 function loadTournaments () {

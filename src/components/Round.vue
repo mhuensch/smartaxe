@@ -35,7 +35,7 @@
       </div>
 
       <div class="row-item">
-        Scoring
+        <component :is="match.game"></component>
       </div>
     </div>
 
@@ -65,8 +65,9 @@
 </template>
 
 <script>
-import scoring from '../scoring'
+import targets from '@/targets'
 import store from '../store'
+import games from '@/components/games'
 
 let routeEntered = false
 
@@ -131,18 +132,17 @@ function loadRounds (result) {
 function loadThrowers (result) {
   return store.find('thrower', result.data.round.throwers)
     .then(response => {
-      result.data.throwers = response.payload.records
+      let data = result.data
+      data.throwers = response.payload.records
 
-      let team1 = result.data.currentTeam || { throwers: [] }
-      let team2 = result.data.nextTeam || { throwers: [] }
+      let throwers = data.throwers
+      let team1 = data.currentTeam || { throwers: [] }
+      let team2 = data.nextTeam || { throwers: [] }
 
-      result.data.currentThrower =
-        result.data.throwers.filter(thrower => thrower.id === team1.throwers[0])[0] || result.data.throwers[0]
+      data.currentThrower = throwers.filter(t => t.id === team1.throwers[0])[0] || throwers[0]
+      data.nextThrower = throwers.filter(t => t.id === team2.throwers[0])[0] || throwers[1]
 
-        result.data.nextThrower =
-          result.data.throwers.filter(thrower => thrower.id === team2.throwers[0])[0] || result.data.throwers[1]
-
-      result.data.currentThrower = result.data.throwers[0]
+      data.currentThrower = data.throwers[0]
       return result
     })
 }
@@ -159,7 +159,7 @@ function created () {
     loadData({ params: this.$route.params, data: {} }).then(result => setData(this, result.data))
   }
 
-  this.target = scoring['WATL']
+  this.target = targets['WATL']
 }
 
 function handleTargetHit (value) {
@@ -182,6 +182,7 @@ function handleTargetHit (value) {
   this.currentTeam = this.nextTeam
   this.currentThrower = this.nextThrower
 
+  this.nextTeam = prevTeam
   if (prevTeam) {
     let nextThrowerIndex = prevTeam.throwers.indexOf(prevThrower.id) + 1
     nextThrowerIndex = prevTeam.throwers.length === nextThrowerIndex ? 0 : nextThrowerIndex
@@ -192,8 +193,6 @@ function handleTargetHit (value) {
     nextThrowerIndex = this.throwers.length === nextThrowerIndex ? 0 : nextThrowerIndex
     this.nextThrower = this.throwers[nextThrowerIndex]
   }
-
-  this.nextTeam = prevTeam
 }
 
 function data () {
@@ -226,6 +225,7 @@ let result =
     { setData
     , handleTargetHit
     }
+  , components: games
   }
 
 export default result
