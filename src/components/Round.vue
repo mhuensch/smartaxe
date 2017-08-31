@@ -2,30 +2,28 @@
 	<div>
     <div class="round-label">Round {{rounds.indexOf(round) + 1}} : {{match.game}}</div>
     <div class="row">
-      <div class="row-item">
 
+      <div class="row-item">
         <span class="thrower-label">
           {{currentThrower.name}}
         </span>
-        <span class="team-label" v-if="currentTeam">
+        <span class="sub-label" v-if="currentTeam">
           Team: {{currentTeam.name}}
         </span>
-        <span class="throw-label">
-          Throw: 1 of {{round.turnSize}}
+        <span class="sub-label">
+          Throwing: {{this.throwCount}} of {{round.turnSize}}
         </span>
-
       </div>
 
       <div class="row-item" v-if="nextThrower">
-
         <span class="next-label">
           Next: {{nextThrower.name}}
         </span>
-        <span class="throw-label" v-if="nextTeam">
+        <span class="sub-label" v-if="nextTeam">
           Team: {{nextTeam.name}}
         </span>
-
       </div>
+
     </div>
 
     <div class="row">
@@ -41,7 +39,12 @@
       </div>
     </div>
 
-    <!-- MATCH: {{match}}
+    <!-- <br />
+    <br />
+    TOURNAMENT: {{tournament}}
+    <br />
+    <br />
+    MATCH: {{match}}
     <br />
     <br />
     ROUND: {{round}}
@@ -53,9 +56,9 @@
     NEXT TEAM: {{nextTeam}}
     <br />
     <br />
-    HITS:
-    <div v-for="hit in hits">
-      {{hit}}
+    THROWS:
+    <div v-for="toss in throws">
+      {{toss}}
     </div> -->
 
   </div>
@@ -63,70 +66,150 @@
 
 <script>
 import scoring from '../scoring'
+import store from '../store'
 
-let $vm = null
+let routeEntered = false
 
-function created () {
-  $vm = this
-  $vm.tournamentId = $vm.$route.params.tournamentId
-  $vm.matchId = $vm.$route.params.matchId
-  $vm.roundId = $vm.$route.params.roundId
-  loadMatch()
-  loadRounds()
+function routeEnter (to, from, next) {
+  let result = { params: to.params, data: {} }
+
+  routeEntered = true
+  loadData(result)
+    .then(() => next(vm => vm.setData(vm, result.data)))
+    .catch(() => next('/'))
+    // TODO: implement better error handling
 }
 
-function handleTargetHit (value) {
-  $vm.hits.push(value)
+function loadData (result) {
+  return loadTournament(result)
+    .then(loadMatch)
+    .then(loadRounds)
+    .then(loadThrowers)
 }
 
-function loadMatch () {
-  $vm.$store.find('match', $vm.matchId).then(result => {
-    $vm.match = result.payload.records[0]
-  })
+function loadTournament (result) {
+  return store
+    .find('tournament', result.params.tournamentId)
+    .then(response => {
+      result.data.tournament = response.payload.records[0]
+      return result
+    })
 }
 
-function loadRounds () {
+function loadMatch (result) {
+  return store
+    .find('match', result.params.matchId)
+    .then(response => {
+      result.data.match = response.payload.records[0]
+      return result
+    })
+}
+
+function loadRounds (result) {
   let options =
-    { match: { tournament: $vm.tournamentId, match: $vm.matchId }
+    { match:
+        { tournament: result.params.tournamentId
+        , match: result.params.matchId
+        }
     , sort: { started: false }
     }
 
-  $vm.$store.find('round', null, options).then(result => {
-    $vm.rounds = result.payload.records
-    $vm.round = $vm.rounds.filter(round => round.id === $vm.roundId)[0]
-    $vm.currentTeam = $vm.round.team1
-    $vm.nextTeam = $vm.round.team2
+  return store
+    .find('round', null, options)
+    .then(response => {
+      result.data.rounds = response.payload.records
 
-    $vm.target = scoring['watl']
+      result.data.round = result.data.rounds
+        .filter(round => round.id === result.params.roundId)[0]
 
-    loadThrowers()
+      result.data.currentTeam = result.data.round.team1
+      result.data.nextTeam = result.data.round.team2
+      return result
+    })
+}
+
+function loadThrowers (result) {
+  return store.find('thrower', result.data.round.throwers)
+    .then(response => {
+      result.data.throwers = response.payload.records
+
+      let team1 = result.data.currentTeam || { throwers: [] }
+      let team2 = result.data.nextTeam || { throwers: [] }
+
+      result.data.currentThrower =
+        result.data.throwers.filter(thrower => thrower.id === team1.throwers[0])[0] || result.data.throwers[0]
+
+        result.data.nextThrower =
+          result.data.throwers.filter(thrower => thrower.id === team2.throwers[0])[0] || result.data.throwers[1]
+
+      result.data.currentThrower = result.data.throwers[0]
+      return result
+    })
+}
+
+function setData (vm, data) {
+  Object.getOwnPropertyNames(data).forEach(name => {
+    vm[name] = data[name]
   })
 }
 
-function loadThrowers () {
-  $vm.$store.find('thrower', $vm.round.throwers).then(result => {
-    $vm.throwers = result.payload.records
+function created () {
+  // SEE: https://github.com/vuejs/vue-router/issues/1357
+  if (!routeEntered) {
+    loadData({ params: this.$route.params, data: {} }).then(result => setData(this, result.data))
+  }
 
-    let team1 = $vm.round.team1 || { throwers: [] }
-    let team2 = $vm.round.team2 || { throwers: [] }
+  this.target = scoring['WATL']
+}
 
-    $vm.currentThrower = $vm.throwers.filter(thrower => thrower.id === team1.throwers[0])[0] || $vm.throwers[0]
-    $vm.nextThrower = $vm.throwers.filter(thrower => thrower.id === team2.throwers[0])[0] || $vm.throwers[1]
-  })
+function handleTargetHit (value) {
+  this.throws.push(
+    { thrower: this.currentThrower.id
+    , value: value
+    }
+  )
+
+  this.throwCount++
+  let turnComplete = this.throwCount > this.round.turnSize
+  if (turnComplete === false) return
+
+  this.throwCount = 1
+  if (!this.nextThrower) return
+
+  let prevTeam = this.currentTeam
+  let prevThrower = this.currentThrower
+
+  this.currentTeam = this.nextTeam
+  this.currentThrower = this.nextThrower
+
+  if (prevTeam) {
+    let nextThrowerIndex = prevTeam.throwers.indexOf(prevThrower.id) + 1
+    nextThrowerIndex = prevTeam.throwers.length === nextThrowerIndex ? 0 : nextThrowerIndex
+    let nextThrowerId = prevTeam.throwers[nextThrowerIndex]
+    this.nextThrower = this.throwers.filter(t => t.id === nextThrowerId)[0]
+  } else {
+    let nextThrowerIndex = this.throwers.indexOf(this.currentThrower) + 1
+    nextThrowerIndex = this.throwers.length === nextThrowerIndex ? 0 : nextThrowerIndex
+    this.nextThrower = this.throwers[nextThrowerIndex]
+  }
+
+  this.nextTeam = prevTeam
 }
 
 function data () {
   let model =
-    { match: {}
+    { tournament: null
+    , match: {}
     , round: {}
     , rounds: []
     , throwers: []
     , target: {}
-    , hits: []
+    , throws: []
     , currentTeam: {}
     , currentThrower: {}
     , nextTeam: {}
     , nextThrower: {}
+    , throwCount: 1
     }
 
   return model
@@ -137,8 +220,11 @@ let result =
   , roundId: null
   , data
   , created
+  , beforeRouteEnter: routeEnter
+  , beforeRouteUpdate: routeEnter
   , methods:
-    { handleTargetHit
+    { setData
+    , handleTargetHit
     }
   }
 
@@ -168,25 +254,19 @@ export default result
     margin: 10px;
   }
 
-  .thrower-label {
+  .thrower-label, .next-label {
     font-size: 2em;
     display: block;
     margin-bottom: .2em;
   }
 
-  .team-label {
-    display: block;
-    color: #666;
-  }
-
-  .throw-label {
-    color: #666;
-  }
-
   .next-label {
-    font-size: 2em;
     color: #999;
+  }
+
+  .sub-label {
     display: block;
+    color: #666;
   }
 
   .round-label {

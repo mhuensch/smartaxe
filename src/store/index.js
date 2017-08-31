@@ -66,29 +66,20 @@ const model =
     }
   }
 
-const indexedDBAdapter = require('fortune-indexeddb')
-const adapter = {adapter: [indexedDBAdapter, {name: 'smart-axe'}]}
+// TODO: re-implement once index db adapter can fix bug that doesnt allow you to delete records?
+// const indexedDBAdapter = require('fortune-indexeddb')
+// const adapter = {adapter: [indexedDBAdapter, {name: 'smart-axe'}]}
+// const store = fortune(model, adapter)
 
 const fortune = require('fortune')
-// const store = fortune(model, adapter)
-console.log('ADAPTER', adapter)
 const store = fortune(model)
 
 const VueStore = {
   install (Vue, options) {
-    store.$empty = function () {
-      ['round', 'match', 'thrower', 'tournament'].forEach(name => {
-        store.find(name).then(result => {
-          let ids = result.payload.records.map(r => { return r.id })
-          if (ids.length === 0) return
-          console.log('clearing', name)
-          store.delete(name, ids).then(console.log)
-        })
-      })
-    }
     Vue.prototype.$store = store
   }
 }
+
 Vue.use(VueStore)
 
-export default VueStore
+export default store
