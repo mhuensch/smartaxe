@@ -1,14 +1,30 @@
 <template>
 	<div>
-    <div class="round-label">Round 2 : Cricket</div>
+    <div class="round-label">Round {{rounds.indexOf(round) + 1}} : {{match.game}}</div>
     <div class="row">
       <div class="row-item">
-        <span class="thrower-label">Dugan</span>
-        <span class="throw-label">Throw: 1 of 2</span>
+
+        <span class="thrower-label">
+          {{currentThrower.name}}
+        </span>
+        <span class="team-label" v-if="currentTeam">
+          Team: {{currentTeam.name}}
+        </span>
+        <span class="throw-label">
+          Throw: 1 of {{round.turnSize}}
+        </span>
+
       </div>
-      <div class="row-item">
-        <span class="next-label">Next: Becky</span>
-        <span class="throw-label">Leading: Red Team</span>
+
+      <div class="row-item" v-if="nextThrower">
+
+        <span class="next-label">
+          Next: {{nextThrower.name}}
+        </span>
+        <span class="throw-label" v-if="nextTeam">
+          Team: {{nextTeam.name}}
+        </span>
+
       </div>
     </div>
 
@@ -25,16 +41,19 @@
       </div>
     </div>
 
-    <!-- <div v-for="thrower in throwers">
-      {{thrower.name}}
-    </div>
-
-    <div class="fill">
-      <template v-for="ring in target">
-        <button class="btn btn-lg" @click="handleTargetHit(ring.value)">{{ring.name}}</button>
-      </template>
-    </div>
-
+    <!-- MATCH: {{match}}
+    <br />
+    <br />
+    ROUND: {{round}}
+    <br />
+    <br />
+    CURRENT TEAM: {{currentTeam}}
+    <br />
+    <br />
+    NEXT TEAM: {{nextTeam}}
+    <br />
+    <br />
+    HITS:
     <div v-for="hit in hits">
       {{hit}}
     </div> -->
@@ -52,18 +71,32 @@ function created () {
   $vm.tournamentId = $vm.$route.params.tournamentId
   $vm.matchId = $vm.$route.params.matchId
   $vm.roundId = $vm.$route.params.roundId
-  loadRound()
+  loadMatch()
+  loadRounds()
 }
 
 function handleTargetHit (value) {
   $vm.hits.push(value)
 }
 
-function loadRound () {
-  let options = { match: { tournament: $vm.tournamentId, match: $vm.matchId } }
-  $vm.$store.find('round', $vm.roundId, options).then(result => {
-    $vm.round = result.payload.records[0]
-    console.log('ROUND', $vm.round)
+function loadMatch () {
+  $vm.$store.find('match', $vm.matchId).then(result => {
+    $vm.match = result.payload.records[0]
+  })
+}
+
+function loadRounds () {
+  let options =
+    { match: { tournament: $vm.tournamentId, match: $vm.matchId }
+    , sort: { started: false }
+    }
+
+  $vm.$store.find('round', null, options).then(result => {
+    $vm.rounds = result.payload.records
+    $vm.round = $vm.rounds.filter(round => round.id === $vm.roundId)[0]
+    $vm.currentTeam = $vm.round.team1
+    $vm.nextTeam = $vm.round.team2
+
     $vm.target = scoring['watl']
 
     loadThrowers()
@@ -73,15 +106,27 @@ function loadRound () {
 function loadThrowers () {
   $vm.$store.find('thrower', $vm.round.throwers).then(result => {
     $vm.throwers = result.payload.records
+
+    let team1 = $vm.round.team1 || { throwers: [] }
+    let team2 = $vm.round.team2 || { throwers: [] }
+
+    $vm.currentThrower = $vm.throwers.filter(thrower => thrower.id === team1.throwers[0])[0] || $vm.throwers[0]
+    $vm.nextThrower = $vm.throwers.filter(thrower => thrower.id === team2.throwers[0])[0] || $vm.throwers[1]
   })
 }
 
 function data () {
   let model =
-    { round: {}
-    , target: null
-    , hits: []
+    { match: {}
+    , round: {}
+    , rounds: []
     , throwers: []
+    , target: {}
+    , hits: []
+    , currentTeam: {}
+    , currentThrower: {}
+    , nextTeam: {}
+    , nextThrower: {}
     }
 
   return model
@@ -129,6 +174,11 @@ export default result
     margin-bottom: .2em;
   }
 
+  .team-label {
+    display: block;
+    color: #666;
+  }
+
   .throw-label {
     color: #666;
   }
@@ -147,18 +197,3 @@ export default result
   }
 
 </style>
-
-
-
-<!-- echo $CI
-echo $CI_BRANCH
-echo $CI_BUILD_NUMBER
-echo $CI_BUILD_URL
-echo $CI_COMMITTER_EMAIL
-echo $CI_COMMITTER_NAME
-echo $CI_COMMITTER_USERNAME
-echo $CI_COMMIT_ID
-echo $CI_MESSAGE
-echo $CI_NAME
-echo $CI_PULL_REQUEST
-echo $CI_REPO_NAME -->

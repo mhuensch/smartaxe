@@ -23,10 +23,8 @@
             <div class="col-10">
               <input class="form-input input-lg" type="text" placeholder="Name" v-model="thrower.name"/>
             </div>
-            <div class="col-2">
-              <button @click="removeThrower(thrower.id)" tabindex="-1">
-                <icon name="times" label="remove" scale=2 class="red"></icon>
-              </button>
+            <div class="col-2" @click="removeThrower(thrower.id)">
+              <icon name="times" label="remove" scale=2 class="red"></icon>
             </div>
           </div>
         </div>
@@ -116,6 +114,11 @@
 
 .red {
   color: red;
+}
+
+.fa-icon {
+  margin-top: 3px;
+  margin-left: 5px;
 }
 
 </style>

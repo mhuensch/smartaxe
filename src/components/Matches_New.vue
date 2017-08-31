@@ -54,9 +54,7 @@
           <input class="form-input input-lg" type="text" placeholder="Name" v-model="team.name"/>
           <div v-for="thrower in team.throwers" class="team-thrower" @click="moveToTeam(thrower, team.id)">
             {{thrower.name}}
-            <button tabindex="-1">
-              <icon :name="team.id === 1 ? 'arrow-circle-right' : 'arrow-circle-left'" label="move" scale=1></icon>
-            </button>
+            <icon :name="team.id === 1 ? 'arrow-circle-right' : 'arrow-circle-left'" label="move" scale=1></icon>
           </div>
         </div>
       </div>
@@ -67,6 +65,7 @@
   </div>
 </template>
 
+{{selectedGame}}
 
 <script>
 import games from '../games'
@@ -140,11 +139,11 @@ function createRound (match) {
   $vm.$store.create('round',
     { tournament: $vm.tournamentId
     , match: match.id
-    , turnSize: $vm.selectedThrows
-    , started: new Date()
+    , turnSize: parseInt($vm.selectedThrows)
     , throwers: $vm.selectedThrowers.map(t => t.id)
     , team1: team1
     , team2: team2
+    , started: new Date()
     }
   ).then(result => {
     let round = result.payload.records[0]
