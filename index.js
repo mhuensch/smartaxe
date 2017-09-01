@@ -19,6 +19,10 @@ Vue.component('icon', Icon)
 require('./node_modules/reset-css/reset.css')
 require('./node_modules/spectre.css/dist/spectre.css')
 
+Vue.config.errorHandler = function (e) {
+	console.log('Caught an error', e)
+}
+
 /* eslint-disable no-new */
 new Vue({
   el: '#app',

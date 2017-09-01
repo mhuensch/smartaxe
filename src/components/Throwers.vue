@@ -23,14 +23,13 @@
             <div class="col-10">
               <input class="form-input input-lg" type="text" placeholder="Name" v-model="thrower.name"/>
             </div>
-            <div class="col-2" @click="removeThrower(thrower.id)">
+            <div class="col-2" @click="removeThrower(thrower)">
               <icon name="times" label="remove" scale=2 class="red"></icon>
             </div>
           </div>
         </div>
       </template>
     </template>
-
 
 
     <button class="btn btn-link" :disabled="throwers.length === 0" @click="next()">
@@ -42,67 +41,90 @@
 
 
 <script>
-  let $vm = null
+  import store from '@/store'
+  import AppError from '@/errors/AppError.js'
+  
+  function loadData (to, from, next) {
+    store
+      .find('tournament', to.params.tournamentId)
+      .then(result => {
+        if (result.payload.records.length !== 0) return
+        // Doing emit rather than passing the error so redirect doesn't occur
+        next(vm => { vm.$emit('error', new AppError('No Tournament found!', 'tournaments')) })
+      })
 
-  function created () {
-    $vm = this
-    $vm.tournamentId = $vm.$route.params.tournamentId
-    reloadThrowers()
+    loadThrowers(to.params.tournamentId)
+      .then(throwers => {
+        // This should not be needed but when the route is updated,
+        // vm.setData does not get called.
+        if (this) return this.setData(this, throwers)
+        next(vm => { vm.throwers = throwers })
+      })
+      .catch(error => next(error))
   }
 
-  function mounted () {
-    this.$watch('$data.throwers', (throwers) => {
+  function loadThrowers (tournamentId) {
+    let options = { match: { tournament: tournamentId }, sort: { name: true } }
+    return store.find('thrower', null, options).then(result => {
+      return result.payload.records
+    })
+  }
+
+  function created () {
+    this.tournamentId = this.$route.params.tournamentId
+
+    this.$watch('error', error => {
+      // Emit error so that the App can pick up the error
+      // just like next() in routing
+      this.$emit('error', error)
+    })
+
+    this.$watch('throwers', throwers => {
       let replacements = throwers.map(thrower => { return { id: thrower.id, replace: { name: thrower.name } } })
       if (replacements.length === 0) return
-      $vm.$store.update('thrower', replacements)
+      store.update('thrower', replacements)
     }, { deep: true })
   }
 
   function addThrower () {
-    $vm.$store
-      .create('thrower', { name: $vm.newThrower, tournament: $vm.tournamentId })
-      .then(() => {
-        $vm.newThrower = null
-        reloadThrowers()
+    store
+      .create('thrower', { name: this.newThrower, tournament: this.tournamentId })
+      .then(results => {
+        this.throwers.push(results.payload.records[0])
+        this.newThrower = null
       })
+      .catch(error => { this.error = error })
   }
 
-  function removeThrower (id) {
-    $vm.$store
-      .delete('thrower', id)
-      .then(reloadThrowers)
-  }
-
-  function reloadThrowers () {
-    let options = { match: { tournament: $vm.tournamentId }, sort: { name: true } }
-    $vm.$store.find('thrower', null, options).then(result => {
-      $vm.throwers = result.payload.records
-      $vm.newThrower = null
-    })
+  function removeThrower (thrower) {
+    store
+      .delete('thrower', thrower.id)
+      .then(() => { this.throwers = this.throwers.filter(t => t.id !== thrower.id) })
   }
 
   function next () {
-    $vm.$router.push({ name: 'matches' })
+    this.$router.push({ name: 'matches' })
   }
 
   function data () {
     let model =
       { newThrower: null
       , throwers: []
+      , error: null
       }
-
     return model
   }
 
   let result =
-    { tournamentId: null
-    , data: data
-    , created: created
-    , mounted: mounted
+    { beforeRouteEnter: loadData
+    , beforeRouteUpdate: loadData
+    , tournamentId: null
+    , data
+    , created
     , methods:
-      { addThrower: addThrower
-      , removeThrower: removeThrower
-      , next: next
+      { addThrower
+      , removeThrower
+      , next
       }
     }
 

@@ -16,9 +16,7 @@
       </div>
     </template>
 
-
     <h2>Start a New Tournament</h2>
-
     <div class="container">
       <div @click="newTournament('WATL')" class="organization watl-target">
         <button class="btn tournament">New WATL Tournament</button>
@@ -42,6 +40,7 @@ function newTournament (target) {
     .then(tournament => {
       continueTournament.call(this, tournament.payload.records[0])
     })
+    .catch(error => { this.$emit('error', error) })
 }
 
 function continueTournament (tournament) {
@@ -54,6 +53,7 @@ function loadTournaments (to, from, next) {
     .then(result => {
       next(vm => { vm.tournaments = result.payload.records })
     })
+    .catch(error => { this.$emit('error', error) })
 }
 
 function data () {

@@ -69,8 +69,9 @@
 
 <script>
 import targets from '@/targets'
-import store from '../store'
+import store from '@/store'
 import games from '@/components/games'
+import AppError from '@/errors/AppError.js'
 
 let routeEntered = false
 
@@ -86,8 +87,8 @@ function routeEnter (to, from, next) {
       next(vm => vm.setData(vm, result.data))
     })
     .catch(error => {
-      error.message = 'Unable to load data!  ' + error.message
-      next(error)
+      // Doing emit rather than passing the error so redirect doesn't occur
+      next(vm => { vm.$emit('error', error) })
     })
 }
 
@@ -103,6 +104,7 @@ function loadTournament (result) {
     .find('tournament', result.params.tournamentId)
     .then(response => {
       result.data.tournament = response.payload.records[0]
+      if (!result.data.tournament) throw new AppError('No Tournament found!', 'tournaments')
       return result
     })
 }
@@ -112,6 +114,7 @@ function loadMatch (result) {
     .find('match', result.params.matchId)
     .then(response => {
       result.data.match = response.payload.records[0]
+      if (!result.data.match) throw new AppError('No Match found!', 'matches')
       return result
     })
 }
@@ -132,6 +135,8 @@ function loadRounds (result) {
 
       result.data.round = result.data.rounds
         .filter(round => round.id === result.params.roundId)[0]
+
+      if (!result.data.round) throw new AppError('No Round found!', 'rounds')
 
       result.data.roundCount = result.data.rounds.indexOf(result.data.round) + 1
 

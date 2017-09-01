@@ -67,7 +67,9 @@
 
 
 <script>
+import store from '@/store'
 import games from '@/components/games'
+import AppError from '@/errors/AppError.js'
 
 let gameData = Object.getOwnPropertyNames(games)
   .filter(name => name !== '$keys')
@@ -77,86 +79,88 @@ let gameData = Object.getOwnPropertyNames(games)
     return game
   })
 
-let $vm = null
-
-function created () {
-  $vm = this
-  $vm.tournamentId = $vm.$route.params.tournamentId
-  loadThrowers()
+function routeEnter (to, from, next) {
+  let options = { match: { tournament: to.params.tournamentId } }
+  store
+    .find('thrower', null, options)
+    .then(result => {
+      next(vm => {
+        if (result.payload.records.length === 0) return vm.$emit('error', new AppError('Could not load throwers', 'throwers'))
+        vm.throwers = result.payload.records
+        vm.selectedThrowers = vm.throwers
+      })
+    })
+    .catch(error => {
+      console.log(error)
+      next(vm => vm.$emit('error', new AppError('Could not load throwers', 'throwers')))
+    })
 }
 
-function mounted () {
+function created () {
+  this.tournamentId = this.$route.params.tournamentId
   this.$watch('selectedThrowers', () => {
-    $vm.selectedAllThrowers = $vm.selectedThrowers.length === $vm.throwers.length
+    this.selectedAllThrowers = this.selectedThrowers.length === this.throwers.length
   }, { deep: true })
 }
 
-function loadThrowers () {
-  let options = { match: { tournament: $vm.tournamentId } }
-  $vm.$store.find('thrower', null, options).then(result => {
-    $vm.throwers = result.payload.records
-    $vm.selectedThrowers = $vm.throwers
-  })
-}
-
 function toggleAllThrowers () {
-  if ($vm.selectedAllThrowers) {
-    $vm.selectedThrowers = $vm.throwers.map(thrower => { return thrower })
+  if (this.selectedAllThrowers) {
+    this.selectedThrowers = this.throwers.map(thrower => { return thrower })
   } else {
-    $vm.selectedThrowers = []
+    this.selectedThrowers = []
   }
 }
 
 function formTeams (shouldFormTeams) {
-  $vm.teams = shouldFormTeams ? [ {id: 1, name: 'Team 1', throwers: []}, {id: 2, name: 'Team 2', throwers: []} ] : null
-  if (!$vm.teams) return
+  this.teams = shouldFormTeams ? [ {id: 1, name: 'Team 1', throwers: []}, {id: 2, name: 'Team 2', throwers: []} ] : null
+  if (!this.teams) return
 
-  $vm.selectedThrowers.forEach((thrower, index) => {
-    $vm.teams[index % 2].throwers.push(thrower)
+  this.selectedThrowers.forEach((thrower, index) => {
+    this.teams[index % 2].throwers.push(thrower)
   })
 }
 
 function moveToTeam (thrower, teamId) {
   let toIndex = teamId === 1 ? 1 : 0
-  $vm.teams[toIndex].throwers.push(thrower)
+  this.teams[toIndex].throwers.push(thrower)
 
   let fromIndex = teamId - 1
-  $vm.teams[fromIndex].throwers = $vm.teams[fromIndex].throwers.filter(t => { return t !== thrower })
+  this.teams[fromIndex].throwers = this.teams[fromIndex].throwers.filter(t => { return t !== thrower })
 }
 
 function isMatchReady () {
   /* eslint-disable operator-linebreak */
-  return $vm.selectedGame
-    && $vm.selectedThrowers.length > 0
-    && (!$vm.teams || Math.abs($vm.teams[0].throwers.length - $vm.teams[1].throwers.length) <= 1)
+  return this.selectedGame
+    && this.selectedThrowers.length > 0
+    && (!this.teams || Math.abs(this.teams[0].throwers.length - this.teams[1].throwers.length) <= 1)
 }
 
 function createMatch () {
-  $vm.$store.create('match',
-    { game: $vm.selectedGame.id
-    , tournament: $vm.tournamentId
-    , throwers: $vm.selectedThrowers.map(t => t.id)
+  store.create('match',
+    { game: this.selectedGame.id
+    , tournament: this.tournamentId
+    , throwers: this.selectedThrowers.map(t => t.id)
     }
-  ).then(result => createRound(result.payload.records[0]))
+  ).then(result => createRound.call(this, result.payload.records[0]))
 }
 
 function createRound (match) {
-  let teams = $vm.teams || []
+  let teams = this.teams || []
   let team1 = !teams[0] ? null : { id: teams[0].id, name: teams[0].name, throwers: teams[0].throwers.map(t => t.id) }
   let team2 = !teams[1] ? null : { id: teams[1].id, name: teams[1].name, throwers: teams[1].throwers.map(t => t.id) }
 
-  $vm.$store.create('round',
-    { tournament: $vm.tournamentId
+  store.create('round',
+    { tournament: this.tournamentId
     , match: match.id
-    , turnSize: parseInt($vm.selectedThrows)
-    , throwers: $vm.selectedThrowers.map(t => t.id)
+    , turnSize: parseInt(this.selectedThrows)
+    , throwers: this.selectedThrowers.map(t => t.id)
     , team1: team1
     , team2: team2
     , started: new Date()
     }
   ).then(result => {
     let round = result.payload.records[0]
-    $vm.$router.push({ name: 'rounds', params: { matchId: match.id, roundId: round.id } })
+    this.$router.push({ name: 'rounds', params: { matchId: match.id, roundId: round.id } })
   })
 }
 
@@ -175,10 +179,11 @@ function data () {
 }
 
 let result =
-  { tournamentId: null
-  , data: data
-  , created: created
-  , mounted: mounted
+  { beforeRouteEnter: routeEnter
+  , beforeRouteUpdate: routeEnter
+  , tournamentId: null
+  , data
+  , created
   , methods:
     { toggleAllThrowers
     , createMatch
