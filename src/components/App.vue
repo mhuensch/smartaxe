@@ -1,12 +1,27 @@
 <template>
   <div id="app">
-    <router-view></router-view>
+    <div class="toast toast-error" v-if="message">
+      <button class="btn btn-clear float-right" @click="clearError"></button>
+      An Error Occured: {{message}}
+    </div>
+    <router-view :key="$route.path"></router-view>
   </div>
 </template>
 
 <script>
+import router from '@/router'
+
 export default {
-  name: 'app'
+  name: 'app',
+  data () { return { message: null } },
+  created () {
+    // let self = this
+    // this.message = 'BLAH'
+    router.onError(e => {
+      this.message = e.message
+    })
+  },
+  methods: { clearError () { this.message = null } }
 }
 </script>
 

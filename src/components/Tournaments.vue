@@ -34,29 +34,26 @@
 
 
 <script>
-let $vm = null
-
-function created () {
-  $vm = this
-  loadTournaments()
-}
+import store from '@/store'
 
 function newTournament (target) {
-  $vm.$store
+  store
     .create('tournament', { target: target, started: new Date() })
     .then(tournament => {
-      continueTournament(tournament.payload.records[0])
+      continueTournament.call(this, tournament.payload.records[0])
     })
 }
 
 function continueTournament (tournament) {
-  $vm.$router.push({ name: 'throwers', params: { tournamentId: tournament.id } })
+  this.$router.push({ name: 'throwers', params: { tournamentId: tournament.id } })
 }
 
-function loadTournaments () {
-  $vm.$store.find('tournament', null, { sort: { started: true }, limit: 5 }).then(result => {
-    $vm.tournaments = result.payload.records
-  })
+function loadTournaments (to, from, next) {
+  store
+    .find('tournament', null, { sort: { started: true }, limit: 5 })
+    .then(result => {
+      next(vm => { vm.tournaments = result.payload.records })
+    })
 }
 
 function data () {
@@ -68,8 +65,9 @@ function data () {
 }
 
 let result =
-  { data: data
-  , created: created
+  { beforeRouteEnter: loadTournaments
+  , beforeRouteUpdate: loadTournaments
+  , data: data
   , methods:
     { newTournament: newTournament
     , continueTournament: continueTournament

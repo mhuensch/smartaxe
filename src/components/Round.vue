@@ -59,12 +59,8 @@
             <span class="gameover-label">Score: {{winningScore}}</span>
           </div>
           <br /><br />
-          <!-- <button class="btn btn-link btn-large">Exit</button> -->
           <button class="btn btn-primary btn-large" @click="createNewRound">Play Another Round</button>
         </div>
-        <!-- <div class="modal-footer">
-          ...
-        </div> -->
       </div>
     </div>
 
@@ -87,11 +83,12 @@ function routeEnter (to, from, next) {
       // This should not be needed but when the route is updated,
       // vm.setData doesnt get called.
       if (this) return this.setData(this, result.data)
-
       next(vm => vm.setData(vm, result.data))
     })
-    .catch(() => next('/'))
-    // TODO: implement better error handling
+    .catch(error => {
+      error.message = 'Unable to load data!  ' + error.message
+      next(error)
+    })
 }
 
 function loadData (result) {
@@ -99,7 +96,6 @@ function loadData (result) {
     .then(loadMatch)
     .then(loadRounds)
     .then(loadThrowers)
-    //
 }
 
 function loadTournament (result) {
@@ -228,7 +224,13 @@ function createNewRound () {
     }
   ).then(result => {
     let round = result.payload.records[0]
-    this.$router.push({ name: 'rounds', params: { tournamentId: this.tournament.id, match: this.match.id, roundId: round.id } })
+
+    // SEE: https://github.com/vuejs/vue-router/issues/1322
+    // This may also account for the back button ocassionally skipping paths
+    let path = `#/tournaments/${this.tournament.id}/matches/${this.match.id}/rounds/${round.id}`
+    window.location = path
+    // this.$router.push({path: path})
+    // this.$router.push({ name: 'rounds', params: { roundId: round.id } })
   })
 }
 
@@ -261,12 +263,12 @@ function data () {
 }
 
 let result =
-  { matchId: null
+  { beforeRouteEnter: routeEnter
+  , beforeRouteUpdate: routeEnter
+  , matchId: null
   , roundId: null
   , data
   , created
-  , beforeRouteEnter: routeEnter
-  , beforeRouteUpdate: routeEnter
   , methods:
     { setData
     , handleTargetHit
