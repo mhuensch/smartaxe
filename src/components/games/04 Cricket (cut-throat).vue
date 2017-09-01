@@ -13,9 +13,12 @@ function data () {
   return model
 }
 
-export default {
-  data
-}
+let result =
+  { props: ['currentTeam', 'nextTeam', 'throwers', 'throws']
+  , data
+  }
+
+export default result
 </script>
 
 <style>

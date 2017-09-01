@@ -6,16 +6,19 @@
 function data () {
   let model =
     { title: 'Showdown'
-    , allowTeams: true
+    , allowTeams: false
     , allowMultipleThrows: true
     }
 
   return model
 }
 
-export default {
-  data
-}
+let result =
+  { props: ['currentTeam', 'nextTeam', 'throwers', 'throws']
+  , data
+  }
+
+export default result
 </script>
 
 <style>

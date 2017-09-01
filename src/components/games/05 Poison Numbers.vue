@@ -5,7 +5,7 @@
 <script>
 function data () {
   let model =
-    { title: 'Points (exact)'
+    { title: 'Poison Numbers'
     , allowTeams: true
     , allowMultipleThrows: true
     }
@@ -13,9 +13,12 @@ function data () {
   return model
 }
 
-export default {
-  data
-}
+let result =
+  { props: ['currentTeam', 'nextTeam', 'throwers', 'throws']
+  , data
+  }
+
+export default result
 </script>
 
 <style>
