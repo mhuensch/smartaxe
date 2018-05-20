@@ -1,39 +1,5 @@
 import Vue from 'vue'
 
-// const model =
-//   { tournament:
-//     { type: String
-//     , target: String
-//     , teams: [ Array('team'), 'tournament' ]
-//     , throwers: [ Array('thrower'), 'tournament' ]
-//     , matches: [ Array('match'), 'tournament' ]
-//     , rounds: [ Array('round'), 'tournament' ]
-//     , started: Date
-//     }
-//   , team:
-//     { name: String
-//     , throwers: [ Array('thrower'), 'team' ]
-//     , tournament: ['tournament', 'teams']
-//     }
-//   , thrower:
-//     { name: String
-//     , team: [ 'team', 'throwers' ]
-//     , tournament: ['tournament', 'throwers']
-//     , matches: [ Array('match'), 'throwers' ]
-//     }
-//   , match:
-//     { game: String
-//     , tournament: ['tournament', 'matches']
-//     , throwers: [ Array('thrower'), 'matches' ]
-//     , rounds: [ Array('round'), 'match' ]
-//     }
-//   , round:
-//     { tournament: ['tournament', 'rounds']
-//     , match: ['match', 'rounds']
-//     , started: Date
-//     }
-//   }
-
 const model =
   { tournament:
     { type: String
